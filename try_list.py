@@ -1,8 +1,6 @@
-from __future__ import division
 import matplotlib
 import numpy as np
 from matplotlib import colors as mcolors
-#from __future__ import print_function
 import tensorflow as tf
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 by_hsv = dict(((name,color))
@@ -16,6 +14,7 @@ list1_label=[]
 list1_test=[]
 target_label=[]
 target_test=[]
+target_label_tensor=[[[],[],[]]for i in range (700)]
 a=open('target.txt')
 i=0
 b=a.readlines()
@@ -59,8 +58,7 @@ for x in range(766):
     target_new[x][1]=(target_new[x][1]*100)
     target_new[x][2]=(target_new[x][2]*100)
     target_new[x]=target_new[x].astype(np.int32).tolist()
-
-a=open('图片.txt')
+a=open('picture.txt')
 i=0
 b=a.readlines()
 for line in b:
@@ -92,23 +90,26 @@ for x in range(0,700):
     #list1[x][1]=tf.one_hot(list1[x][1],5)
     list1_label.append([list1[x][1]])
     target_label.append([target_new[x]])
-    label[x].append(target_label[x])   
-    label[x].append(list1_label[x]) 
+    #target_label[x]=np.array(target_label[x]).T
 
 for x in range(700,766):  
-    list1_test.append(list1[x][1])
+    list1_test.append([list1[x][1]])
     #list1[x]=tf.one_hot()
-    target_test.append(target_new[x])    
+    target_test.append([target_new[x]])    
 
 for x in range(0,66):
     test[x].append([target_test[x]])   
     test[x].append([list1_test[x]]) 
-#print([list1_label[2:5]])    
+
+for x in range(0,700):
+    label[x].append(target_label[x])   
+    label[x].append(list1_label[x])
+#print(target_label[1].shape)
 
 def compute_accuracy(v_xs,v_ys):
     global prediction
     y_pre = sess.run(prediction,feed_dict={xs:v_xs})
-    correct_prediction=tf.equal(tf.argmax(y_pre,1),tf.argmax(ys,1))
+    correct_prediction=tf.equal(tf.argmax(y_pre,1),tf.argmax(v_ys,1))
     accuracy=tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
     result=sess.run(accuracy.eval,feed_dict={xs:v_xs,ys:v_ys})
     return result
@@ -138,7 +139,12 @@ sess=tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for i in range(0,700):
-        batch_xs,batch_ys=label[i]
-        sess.run(train_step,feed_dict={xs:batch_xs,ys:batch_ys})
-        if i%70==0:
-            print(compute_accuracy(target_test,list1_test))
+    #target_label=tf.convert_to_tensor(target_label[i],dtype=tf.float32)
+    #list1_label=tf.convert_to_tensor(list1_label[i],dtype=tf.float32)
+    #batch_xs,batch_ys=label[i]
+    sess.run(train_step,feed_dict={xs:target_label[i],ys:list1_label[i]})
+    if i%70==0:
+        target_test=tf.convert_to_tensor(target_test[i],dtype=tf.float32)
+        list1_test=tf.convert_to_tensor(list1_test[i],dtype=tf.float32)
+        print(compute_accuracy(target_test[i],list1_test[i]))
+
